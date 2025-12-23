@@ -87,6 +87,57 @@ export interface Team {
   primary_color: string | null;
 }
 
+// Booking Types
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  is_active: boolean;
+}
+
+export interface Service {
+  id: string;
+  category_id: string | null;
+  name: string;
+  description: string;
+  duration_minutes: number;
+  price: number;
+  lead_time_hours: number;
+  buffer_minutes: number;
+  max_advance_days: number;
+  is_active: boolean;
+  category: ServiceCategory | null;
+}
+
+export interface TimeSlot {
+  start_time: string;
+  end_time: string;
+}
+
+export interface Booking {
+  id: string;
+  service_id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  notes: string;
+  created_at: string;
+  service: Service | null;
+}
+
+export interface BookingRequest {
+  service_id: string;
+  start_time: string;
+  end_time: string;
+  notes?: string;
+  // Guest fields (for public booking)
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
+}
+
 // Storage helpers
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -256,4 +307,172 @@ export function getStatusColor(status: string): string {
     default:
       return 'bg-gray-100 text-gray-800';
   }
+}
+
+export function getBookingStatusColor(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'confirmed':
+      return 'bg-blue-100 text-blue-800';
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'cancelled':
+      return 'bg-gray-100 text-gray-800';
+    case 'no_show':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Booking API Functions
+
+export async function getServices(): Promise<{ services: Service[]; categories: ServiceCategory[] }> {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/portal-services`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
+    throw new Error(data.error || 'Failed to fetch services');
+  }
+
+  return data;
+}
+
+export async function getAvailableSlots(serviceId: string, date: string): Promise<{ slots: TimeSlot[] }> {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/portal-available-slots?service_id=${serviceId}&date=${date}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
+    throw new Error(data.error || 'Failed to fetch available slots');
+  }
+
+  return data;
+}
+
+export async function getMyBookings(): Promise<{ bookings: Booking[] }> {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/portal-bookings`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
+    throw new Error(data.error || 'Failed to fetch bookings');
+  }
+
+  return data;
+}
+
+export async function createBooking(booking: BookingRequest): Promise<{ booking: Booking }> {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/portal-create-booking`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(booking),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
+    throw new Error(data.error || 'Failed to create booking');
+  }
+
+  return data;
+}
+
+export async function cancelBooking(bookingId: string): Promise<void> {
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/portal-cancel-booking`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ booking_id: bookingId }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+    }
+    throw new Error(data.error || 'Failed to cancel booking');
+  }
+}
+
+export function formatTime(dateString: string): string {
+  return new Date(dateString).toLocaleTimeString('en-CA', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+export function formatDuration(minutes: number): string {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${mins}m`;
+  }
+  return `${minutes}m`;
 }
