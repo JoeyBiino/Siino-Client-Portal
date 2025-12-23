@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { verifyPortalToken, getSupabaseClient } from '../_shared/auth.ts';
+import { validateSession, getSupabaseClient } from '../_shared/auth.ts';
 
 interface CreateBookingRequest {
   service_id: string;
@@ -26,9 +26,9 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify portal token
-    const payload = await verifyPortalToken(req.headers.get('Authorization'));
-    if (!payload) {
+    // Verify session
+    const session = await validateSession(req.headers.get('Authorization'));
+    if (!session) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,7 +46,7 @@ serve(async (req: Request) => {
     }
 
     const supabase = getSupabaseClient();
-    const { client_id, team_id } = payload;
+    const { client_id, team_id, client_name } = session;
 
     // Verify service exists and is active
     const { data: service, error: serviceError } = await supabase
@@ -60,21 +60,6 @@ serve(async (req: Request) => {
     if (serviceError || !service) {
       return new Response(
         JSON.stringify({ error: 'Service not found or inactive' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify client exists
-    const { data: client, error: clientError } = await supabase
-      .from('clients')
-      .select('id, name, email')
-      .eq('id', client_id)
-      .eq('team_id', team_id)
-      .single();
-
-    if (clientError || !client) {
-      return new Response(
-        JSON.stringify({ error: 'Client not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -143,7 +128,7 @@ serve(async (req: Request) => {
     }
 
     // Create the booking
-    const bookingTitle = `${service.name} - ${client.name}`;
+    const bookingTitle = `${service.name} - ${client_name}`;
     
     const { data: booking, error: insertError } = await supabase
       .from('bookings')

@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { verifyPortalToken, getSupabaseClient } from '../_shared/auth.ts';
+import { validateSession, getSupabaseClient } from '../_shared/auth.ts';
 
 serve(async (req: Request) => {
   // Handle CORS preflight
@@ -12,9 +12,9 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify portal token
-    const payload = await verifyPortalToken(req.headers.get('Authorization'));
-    if (!payload) {
+    // Verify session
+    const session = await validateSession(req.headers.get('Authorization'));
+    if (!session) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -22,7 +22,7 @@ serve(async (req: Request) => {
     }
 
     const supabase = getSupabaseClient();
-    const { team_id } = payload;
+    const { team_id } = session;
 
     // Fetch active categories
     const { data: categories, error: categoriesError } = await supabase

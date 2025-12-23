@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { verifyPortalToken, getSupabaseClient } from '../_shared/auth.ts';
+import { validateSession, getSupabaseClient } from '../_shared/auth.ts';
 
 interface CancelBookingRequest {
   booking_id: string;
@@ -23,9 +23,9 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify portal token
-    const payload = await verifyPortalToken(req.headers.get('Authorization'));
-    if (!payload) {
+    // Verify session
+    const session = await validateSession(req.headers.get('Authorization'));
+    if (!session) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -43,7 +43,7 @@ serve(async (req: Request) => {
     }
 
     const supabase = getSupabaseClient();
-    const { client_id, team_id } = payload;
+    const { client_id, team_id } = session;
 
     // Verify booking exists and belongs to this client
     const { data: booking, error: bookingError } = await supabase
