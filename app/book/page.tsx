@@ -49,7 +49,8 @@ interface TimeSlot {
   end_time: string;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_URL = SUPABASE_BASE_URL ? `${SUPABASE_BASE_URL}/functions/v1` : '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const DEFAULT_TEAM_ID = process.env.NEXT_PUBLIC_TEAM_ID || '';
 
@@ -104,7 +105,7 @@ export default function PublicBookingPage() {
     if (!teamId) { setError('Team ID is required. Add ?team=YOUR_TEAM_ID to the URL'); return; }
     try {
       setLoading(true); setError('');
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/public-services?team_id=${teamId}`, {
+      const response = await fetch(`${SUPABASE_URL}/public-services?team_id=${teamId}`, {
         method: 'GET', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Failed to load services'); }
@@ -117,7 +118,7 @@ export default function PublicBookingPage() {
     if (!portalCode.trim()) return;
     setLookingUpClient(true); setError('');
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/portal-lookup-client`, {
+      const response = await fetch(`${SUPABASE_URL}/portal-lookup-client`, {
         method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ portal_code: portalCode.trim() }),
       });
@@ -138,7 +139,7 @@ export default function PublicBookingPage() {
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/public-available-slots?service_id=${selectedServices[0].service.id}&date=${date}&team_id=${teamId}&timezone=${encodeURIComponent(timezone)}`,
+        `${SUPABASE_URL}/public-available-slots?service_id=${selectedServices[0].service.id}&date=${date}&team_id=${teamId}&timezone=${encodeURIComponent(timezone)}`,
         { method: 'GET', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' } }
       );
       if (!response.ok) throw new Error('Failed to load slots');
@@ -162,7 +163,7 @@ export default function PublicBookingPage() {
       const serviceNames = selectedServices.map(s => s.quantity > 1 ? `${s.service.name} (x${s.quantity})` : s.service.name).join(', ');
       let bookingNotes = `Services: ${serviceNames}\nDuration: ${formatDuration(totalDur)}\nLocation: ${locationInfo.address}\nContact: ${locationInfo.useClientInfo ? clientInfo.fullName : locationInfo.contactName} - ${locationInfo.useClientInfo ? clientInfo.phone : locationInfo.contactPhone}\n`;
       if (notes) bookingNotes += `\nNotes: ${notes}`;
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/portal-public-booking`, {
+      const response = await fetch(`${SUPABASE_URL}/portal-public-booking`, {
         method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client_id: clientId,

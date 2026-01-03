@@ -4,19 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getToken, getClient, logout, Client } from '@/lib/api';
+import { LanguageProvider, useLanguage } from '@/lib/language-context';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [client, setClient] = useState<Client | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { lang, setLang, t } = useLanguage();
 
   useEffect(() => {
-    // Check authentication
     if (!getToken()) {
       router.push('/');
       return;
@@ -30,46 +27,44 @@ export default function DashboardLayout({
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Projects', href: '/dashboard/projects', icon: FolderIcon },
-    { name: 'Invoices', href: '/dashboard/invoices', icon: DocumentIcon },
-    { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarIcon },
+    { name: t('dashboard'), href: '/dashboard', icon: HomeIcon },
+    { name: t('projects'), href: '/dashboard/projects', icon: FolderIcon },
+    { name: t('invoices'), href: '/dashboard/invoices', icon: DocumentIcon },
+    { name: t('bookings'), href: '/dashboard/bookings', icon: CalendarIcon },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
+    if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-[#0d0d10]">
       {/* Top Navigation */}
-      <nav className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
+      <nav className="bg-[#1a1a1e] border-b border-[#2a2a32] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Logo & Nav Links */}
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#9B7EBF] rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <span className="ml-2 text-lg font-semibold text-gray-900 dark:text-white hidden sm:block">Client Portal</span>
+                <span className="ml-2 text-lg font-semibold text-white hidden sm:block">Client Portal</span>
               </div>
               
               {/* Desktop Navigation */}
-              <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
+              <div className="hidden sm:ml-8 sm:flex sm:space-x-2">
                 {navigation.map((item) => (
                   <Link
-                    key={item.name}
+                    key={item.href}
                     href={item.href}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition ${
+                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       isActive(item.href)
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                        ? 'bg-[#9B7EBF]/20 text-[#9B7EBF]'
+                        : 'text-gray-400 hover:bg-[#2a2a32] hover:text-white'
                     }`}
                   >
                     <item.icon className="w-5 h-5 mr-1.5" />
@@ -79,23 +74,47 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center">
-              <span className="text-sm text-gray-600 dark:text-gray-300 mr-4 hidden sm:block">
+            {/* Right side: Language + User Menu */}
+            <div className="flex items-center space-x-4">
+              {/* Language Toggle */}
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setLang('en')}
+                  className={`px-2.5 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    lang === 'en'
+                      ? 'bg-[#9B7EBF] text-white'
+                      : 'text-gray-400 hover:bg-[#2a2a32] hover:text-white'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang('fr')}
+                  className={`px-2.5 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    lang === 'fr'
+                      ? 'bg-[#9B7EBF] text-white'
+                      : 'text-gray-400 hover:bg-[#2a2a32] hover:text-white'
+                  }`}
+                >
+                  FR
+                </button>
+              </div>
+
+              <span className="text-sm text-gray-400 hidden sm:block">
                 {client?.name}
               </span>
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-md transition"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-400 hover:bg-[#2a2a32] hover:text-white rounded-lg transition-colors"
               >
                 <LogoutIcon className="w-5 h-5 mr-1.5" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline">{t('signOut')}</span>
               </button>
 
               {/* Mobile menu button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="sm:hidden ml-2 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                className="sm:hidden p-2 rounded-lg text-gray-400 hover:bg-[#2a2a32] hover:text-white"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -107,17 +126,17 @@ export default function DashboardLayout({
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-gray-200 dark:border-slate-700">
+          <div className="sm:hidden border-t border-[#2a2a32]">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
+                  className={`flex items-center px-3 py-2 text-base font-medium rounded-lg ${
                     isActive(item.href)
-                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                      ? 'bg-[#9B7EBF]/20 text-[#9B7EBF]'
+                      : 'text-gray-400 hover:bg-[#2a2a32] hover:text-white'
                   }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
@@ -125,9 +144,9 @@ export default function DashboardLayout({
                 </Link>
               ))}
             </div>
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-slate-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Signed in as</p>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{client?.name}</p>
+            <div className="px-4 py-3 border-t border-[#2a2a32]">
+              <p className="text-sm text-gray-500">{lang === 'fr' ? 'Connecté en tant que' : 'Signed in as'}</p>
+              <p className="text-sm font-medium text-white">{client?.name}</p>
             </div>
           </div>
         )}
@@ -138,6 +157,14 @@ export default function DashboardLayout({
         {children}
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <LanguageProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </LanguageProvider>
   );
 }
 

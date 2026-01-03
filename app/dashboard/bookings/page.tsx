@@ -680,3 +680,49 @@ export default function BookingsPage() {
     </div>
   );
 }
+semibold text-white">{booking.service?.name || booking.title}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{formatDate(booking.start_time)} at {formatTime(booking.start_time)}</p>
+                    {booking.notes && <p className="text-sm text-gray-400 mt-2 line-clamp-2">{booking.notes}</p>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusStyle(booking.status)}`}>
+                      {t(booking.status as any)}
+                    </span>
+                    <button onClick={() => handleCancelBooking(booking.id)} className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors">
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-white mb-4">{t('past')}</h2>
+        {pastBookings.length === 0 ? (
+          <div className="bg-[#1a1a1e] rounded-xl border border-[#2a2a32] p-8 text-center">
+            <p className="text-gray-500">{t('noPastBookings')}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pastBookings.map(booking => (
+              <div key={booking.id} className="p-4 bg-[#1a1a1e] rounded-xl border border-[#2a2a32] opacity-75">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-medium text-white">{booking.service?.name || booking.title}</h3>
+                    <p className="text-sm text-gray-500">{formatDate(booking.start_time)} at {formatTime(booking.start_time)}</p>
+                  </div>
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusStyle(booking.status)}`}>
+                    {t(booking.status as any)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
