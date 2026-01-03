@@ -3,26 +3,99 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 248, 250, 252;
+  --foreground-rgb: 31, 41, 55;
+  --background-start-rgb: 249, 250, 251;
+  --background-end-rgb: 249, 250, 251;
+  --siino-accent: 124, 93, 175;
+  --siino-accent-light: 155, 126, 191;
+}
+
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 13, 13, 16;
+  --background-end-rgb: 13, 13, 16;
+  --siino-accent: 155, 126, 191;
+  --siino-accent-light: 124, 93, 175;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-start-rgb));
   min-height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 15, 23, 42;
-    --background-end-rgb: 15, 23, 42;
-  }
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1e;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a2a32;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3a3a44;
+}
+
+/* Date input styling for dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Focus states with siino purple */
+input:focus, select:focus, textarea:focus, button:focus {
+  outline: none;
+  ring: 2px solid rgb(var(--siino-accent));
+}
+
+/* Time slot button styling */
+.time-slot-btn {
+  @apply p-3 text-center border rounded-lg transition-all duration-150 font-medium;
+}
+
+.time-slot-btn:hover:not(.selected):not(:disabled) {
+  @apply border-siino-500 bg-siino-500/10;
+}
+
+.time-slot-btn.selected {
+  @apply border-siino-500 bg-siino-500/20 text-siino-500;
+}
+
+/* Progress step styling */
+.progress-step {
+  @apply flex items-center;
+}
+
+.progress-step-number {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors;
+}
+
+.progress-step-number.active {
+  @apply bg-siino-500 text-white;
+}
+
+.progress-step-number.completed {
+  @apply bg-siino-500 text-white;
+}
+
+.progress-step-number.inactive {
+  @apply bg-gray-200 text-gray-500 dark:bg-dark-border dark:text-gray-400;
+}
+
+.progress-line {
+  @apply h-0.5 mx-2 transition-colors flex-1;
+}
+
+.progress-line.active {
+  @apply bg-siino-500;
+}
+
+.progress-line.inactive {
+  @apply bg-gray-200 dark:bg-dark-border;
 }

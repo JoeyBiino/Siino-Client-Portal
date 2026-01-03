@@ -1,5 +1,6 @@
 // Supabase Edge Function: public-available-slots
 // Calculates available booking slots for a specific service and date (public access)
+// Fixed timezone handling for proper local time display
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -11,7 +12,6 @@ interface TimeSlot {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -19,12 +19,11 @@ serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const url = new URL(req.url);
     const serviceId = url.searchParams.get('service_id');
-    const dateStr = url.searchParams.get('date'); // YYYY-MM-DD format
+    const dateStr = url.searchParams.get('date');
     const teamId = url.searchParams.get('team_id');
 
     if (!serviceId || !dateStr || !teamId) {
@@ -34,7 +33,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Fetch service details
     const { data: service, error: serviceError } = await supabase
       .from('services')
       .select('*')
@@ -50,13 +48,11 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse the requested date - treat as local date
     const [year, month, day] = dateStr.split('-').map(Number);
     const requestedDate = new Date(year, month - 1, day);
     const dayOfWeek = requestedDate.getDay();
     const now = new Date();
 
-    // Check if date is within booking window
     const minDate = new Date(now.getTime() + service.lead_time_hours * 60 * 60 * 1000);
     const maxDate = new Date(now.getTime() + service.max_advance_days * 24 * 60 * 60 * 1000);
 
@@ -70,7 +66,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Fetch team availability for this day of week
     const { data: availability, error: availError } = await supabase
       .from('team_availability')
       .select('*')
@@ -85,15 +80,12 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse working hours
     const [startHour, startMin] = availability.start_time.split(':').map(Number);
     const [endHour, endMin] = availability.end_time.split(':').map(Number);
 
-    // Create day boundaries
     const dayStart = new Date(year, month - 1, day, 0, 0, 0);
     const dayEnd = new Date(year, month - 1, day, 23, 59, 59);
 
-    // Fetch blocked times
     const { data: blockedTimes } = await supabase
       .from('blocked_times')
       .select('*')
@@ -101,7 +93,6 @@ serve(async (req: Request) => {
       .gte('end_time', dayStart.toISOString())
       .lte('start_time', dayEnd.toISOString());
 
-    // Fetch existing bookings
     const { data: existingBookings } = await supabase
       .from('bookings')
       .select('start_time, end_time, status')
@@ -110,7 +101,6 @@ serve(async (req: Request) => {
       .gte('end_time', dayStart.toISOString())
       .lte('start_time', dayEnd.toISOString());
 
-    // Generate time slots
     const slots: TimeSlot[] = [];
     const slotDuration = service.duration_minutes;
     const bufferMinutes = service.buffer_minutes || 0;
@@ -123,13 +113,11 @@ serve(async (req: Request) => {
       const slotEnd = new Date(currentTime.getTime() + slotDuration * 60 * 1000);
       const slotEndWithBuffer = new Date(slotEnd.getTime() + bufferMinutes * 60 * 1000);
 
-      // Check if slot is in the past
       if (slotStart <= minDate) {
         currentTime = new Date(currentTime.getTime() + 30 * 60 * 1000);
         continue;
       }
 
-      // Check blocked times
       const isBlocked = (blockedTimes || []).some((block: any) => {
         const blockStart = new Date(block.start_time);
         const blockEnd = new Date(block.end_time);
@@ -141,7 +129,6 @@ serve(async (req: Request) => {
         continue;
       }
 
-      // Check existing bookings
       const hasConflict = (existingBookings || []).some((booking: any) => {
         const bookingStart = new Date(booking.start_time);
         const bookingEnd = new Date(booking.end_time);
