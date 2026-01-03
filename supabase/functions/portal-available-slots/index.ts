@@ -29,6 +29,7 @@ serve(async (req: Request) => {
     const url = new URL(req.url);
     const serviceId = url.searchParams.get('service_id');
     const dateStr = url.searchParams.get('date'); // YYYY-MM-DD format
+    const timezone = url.searchParams.get('timezone') || 'America/Montreal'; // Default to Montreal
 
     if (!serviceId || !dateStr) {
       return new Response(
@@ -56,8 +57,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // Parse the requested date
-    const requestedDate = new Date(dateStr + 'T00:00:00');
+    // Parse the requested date - treat as local date
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const requestedDate = new Date(year, month - 1, day); // Local date
     const dayOfWeek = requestedDate.getDay(); // 0 = Sunday, 6 = Saturday
     const now = new Date();
 
@@ -65,7 +67,11 @@ serve(async (req: Request) => {
     const minDate = new Date(now.getTime() + service.lead_time_hours * 60 * 60 * 1000);
     const maxDate = new Date(now.getTime() + service.max_advance_days * 24 * 60 * 60 * 1000);
 
-    if (requestedDate < new Date(now.toDateString()) || requestedDate > maxDate) {
+    // Use start of requested day for comparison
+    const startOfRequestedDay = new Date(year, month - 1, day, 0, 0, 0);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+    if (startOfRequestedDay < startOfToday || startOfRequestedDay > maxDate) {
       return new Response(
         JSON.stringify({ slots: [], message: 'Date is outside booking window' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -91,9 +97,9 @@ serve(async (req: Request) => {
     const [startHour, startMin] = availability.start_time.split(':').map(Number);
     const [endHour, endMin] = availability.end_time.split(':').map(Number);
 
-    // Fetch blocked times for this date
-    const dayStart = new Date(dateStr + 'T00:00:00');
-    const dayEnd = new Date(dateStr + 'T23:59:59');
+    // Create day boundaries in local time
+    const dayStart = new Date(year, month - 1, day, 0, 0, 0);
+    const dayEnd = new Date(year, month - 1, day, 23, 59, 59);
 
     const { data: blockedTimes, error: blockedError } = await supabase
       .from('blocked_times')
@@ -124,12 +130,9 @@ serve(async (req: Request) => {
     const slotDuration = service.duration_minutes;
     const bufferMinutes = service.buffer_minutes || 0;
 
-    // Create slots starting from working hours
-    let currentTime = new Date(requestedDate);
-    currentTime.setHours(startHour, startMin, 0, 0);
-
-    const endTime = new Date(requestedDate);
-    endTime.setHours(endHour, endMin, 0, 0);
+    // Create slots starting from working hours in local time
+    let currentTime = new Date(year, month - 1, day, startHour, startMin, 0);
+    const endTime = new Date(year, month - 1, day, endHour, endMin, 0);
 
     while (currentTime.getTime() + slotDuration * 60 * 1000 <= endTime.getTime()) {
       const slotStart = new Date(currentTime);

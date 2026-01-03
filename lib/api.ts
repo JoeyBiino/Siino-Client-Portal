@@ -127,6 +127,13 @@ export interface Booking {
   service: Service | null;
 }
 
+export interface BookingLocation {
+  address: string;
+  contact_name: string;
+  contact_phone: string;
+  use_client_info: boolean;
+}
+
 export interface BookingRequest {
   service_id: string;
   start_time: string;
@@ -136,6 +143,10 @@ export interface BookingRequest {
   guest_name?: string;
   guest_email?: string;
   guest_phone?: string;
+  // Location fields
+  location_address?: string;
+  location_contact_name?: string;
+  location_contact_phone?: string;
 }
 
 // Storage helpers
