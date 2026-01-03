@@ -14,7 +14,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const { portal_code } = await req.json()
+    const { portal_code, team_id } = await req.json()
     
     if (!portal_code) {
       return new Response(
@@ -23,14 +23,21 @@ serve(async (req) => {
       )
     }
 
-    // Look up client by portal code
-    const { data: client, error } = await supabase
+    // Look up client by portal code (optionally filtered by team)
+    let query = supabase
       .from('clients')
-      .select('id, name, email, phone, billing_address, billing_city, billing_province, billing_postal_code')
+      .select('id, name, email, phone, billing_address, billing_city, billing_province, billing_postal_code, team_id')
       .eq('portal_code', portal_code.trim().toUpperCase())
-      .single()
+
+    // If team_id provided, filter by it
+    if (team_id) {
+      query = query.eq('team_id', team_id)
+    }
+
+    const { data: client, error } = await query.single()
 
     if (error || !client) {
+      console.log('Lookup error:', error, 'Portal code:', portal_code)
       return new Response(
         JSON.stringify({ error: 'Client not found. Please check your portal code.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

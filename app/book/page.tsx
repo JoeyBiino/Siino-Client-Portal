@@ -49,19 +49,24 @@ interface TimeSlot {
   end_time: string;
 }
 
-const SUPABASE_BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_URL = SUPABASE_BASE_URL ? `${SUPABASE_BASE_URL}/functions/v1` : '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const DEFAULT_TEAM_ID = process.env.NEXT_PUBLIC_TEAM_ID || '';
+const getSupabaseConfig = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  return {
+    SUPABASE_URL: baseUrl ? `${baseUrl}/functions/v1` : '',
+    SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    DEFAULT_TEAM_ID: process.env.NEXT_PUBLIC_TEAM_ID || '',
+  };
+};
 
 export default function PublicBookingPage() {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, DEFAULT_TEAM_ID } = getSupabaseConfig();
   const [lang, setLang] = useState<Language>('en');
   const t = (key: keyof typeof translations.en) => translations[lang][key] || key;
   
   const [step, setStep] = useState<BookingStep>('client-info');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [teamId, setTeamId] = useState<string>(DEFAULT_TEAM_ID);
+  const [teamId, setTeamId] = useState<string>('');
   
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     fullName: '', email: '', phone: '', billingAddress: '', billingCity: '', billingProvince: 'QC', billingPostalCode: '',
@@ -93,8 +98,8 @@ export default function PublicBookingPage() {
     if (savedLang && (savedLang === 'en' || savedLang === 'fr')) setLang(savedLang);
     const params = new URLSearchParams(window.location.search);
     const urlTeamId = params.get('team');
-    if (urlTeamId) setTeamId(urlTeamId);
-  }, []);
+    setTeamId(urlTeamId || DEFAULT_TEAM_ID);
+  }, [DEFAULT_TEAM_ID]);
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
