@@ -53,6 +53,9 @@ interface TimeSlot {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+// IMPORTANT: Set your team ID here or pass via URL param
+const DEFAULT_TEAM_ID = process.env.NEXT_PUBLIC_TEAM_ID || '';
+
 export default function PublicBookingPage() {
   const [lang, setLang] = useState<Language>('en');
   const t = (key: keyof typeof translations.en) => translations[lang][key] || key;
@@ -60,6 +63,7 @@ export default function PublicBookingPage() {
   const [step, setStep] = useState<BookingStep>('client-info');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [teamId, setTeamId] = useState<string>(DEFAULT_TEAM_ID);
   
   // Client info
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
@@ -106,6 +110,13 @@ export default function PublicBookingPage() {
     if (savedLang && (savedLang === 'en' || savedLang === 'fr')) {
       setLang(savedLang);
     }
+    
+    // Get team_id from URL if provided
+    const params = new URLSearchParams(window.location.search);
+    const urlTeamId = params.get('team');
+    if (urlTeamId) {
+      setTeamId(urlTeamId);
+    }
   }, []);
 
   const handleLanguageChange = (newLang: Language) => {
@@ -115,9 +126,15 @@ export default function PublicBookingPage() {
 
   // Fetch services when moving to services step
   const loadServices = async () => {
+    if (!teamId) {
+      setError('Team ID is required. Add ?team=YOUR_TEAM_ID to the URL');
+      return;
+    }
+    
     try {
       setLoading(true);
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/portal-services`, {
+      setError('');
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/public-services?team_id=${teamId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -125,7 +142,10 @@ export default function PublicBookingPage() {
         },
       });
       
-      if (!response.ok) throw new Error('Failed to load services');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to load services');
+      }
       
       const data = await response.json();
       setServices(data.services || []);
@@ -188,7 +208,7 @@ export default function PublicBookingPage() {
     setLoadingSlots(true);
     try {
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/portal-available-slots?service_id=${selectedServices[0].service.id}&date=${date}`,
+        `${SUPABASE_URL}/functions/v1/public-available-slots?service_id=${selectedServices[0].service.id}&date=${date}&team_id=${teamId}`,
         {
           method: 'GET',
           headers: {
