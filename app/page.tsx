@@ -26,10 +26,11 @@ export default function LoginPage() {
 
     try {
       await login(code.toUpperCase().trim());
-      router.push('/dashboard');
+      // Small delay to ensure localStorage is written before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message || (lang === 'fr' ? 'Code portail invalide' : 'Invalid portal code'));
-    } finally {
       setLoading(false);
     }
   };
