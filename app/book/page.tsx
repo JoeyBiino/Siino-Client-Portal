@@ -137,9 +137,9 @@ export default function PublicBookingPage() {
     if (selectedServices.length === 0) return;
     setLoadingSlots(true);
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const tzOffset = new Date().getTimezoneOffset();
       const response = await fetch(
-        `${SUPABASE_URL}/public-available-slots?service_id=${selectedServices[0].service.id}&date=${date}&team_id=${teamId}&timezone=${encodeURIComponent(timezone)}`,
+        `${SUPABASE_URL}/public-available-slots?service_id=${selectedServices[0].service.id}&date=${date}&team_id=${teamId}&tz_offset=${tzOffset}`,
         { method: 'GET', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' } }
       );
       if (!response.ok) throw new Error('Failed to load slots');
@@ -358,8 +358,7 @@ export default function PublicBookingPage() {
         {step === 'location' && (
           <div className="bg-[#1a1a1e] rounded-xl border border-[#2a2a32] p-6">
             <button onClick={() => setStep('datetime')} className="text-[#9B7EBF] hover:text-[#b599d0] mb-4 flex items-center transition-colors"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>{t('back')}</button>
-            <h2 className="text-xl font-semibold text-white mb-2">{t('location')}</h2>
-            <p className="text-gray-400 mb-6">{t('locationDesc')}</p>
+            <h2 className="text-xl font-semibold text-white mb-6">{t('location')}</h2>
             <div className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-300 mb-2">{t('address')} *</label><input type="text" value={locationInfo.address} onChange={(e) => setLocationInfo(prev => ({ ...prev, address: e.target.value }))} placeholder={t('enterAddress')} className="w-full p-3 bg-[#0d0d10] border border-[#2a2a32] rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-[#9B7EBF] focus:border-transparent" /></div>
               <div className="border-t border-[#2a2a32] pt-4">

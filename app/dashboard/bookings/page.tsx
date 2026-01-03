@@ -424,8 +424,7 @@ export default function BookingsPage() {
               </svg>{t('back')}
             </button>
 
-            <h2 className="text-xl font-semibold text-white mb-2">{t('location')}</h2>
-            <p className="text-gray-400 mb-6">{t('locationDesc')}</p>
+            <h2 className="text-xl font-semibold text-white mb-6">{t('location')}</h2>
             
             <div className="space-y-4">
               <div>

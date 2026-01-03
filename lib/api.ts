@@ -371,7 +371,8 @@ export async function getAvailableSlots(serviceId: string, date: string): Promis
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${SUPABASE_URL}/portal-available-slots?service_id=${serviceId}&date=${date}`, {
+  const tzOffset = new Date().getTimezoneOffset();
+  const response = await fetch(`${SUPABASE_URL}/portal-available-slots?service_id=${serviceId}&date=${date}&tz_offset=${tzOffset}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
