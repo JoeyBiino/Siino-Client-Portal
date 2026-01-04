@@ -72,7 +72,7 @@ export default function PublicBookingPage() {
     fullName: '', email: '', phone: '', billingAddress: '', billingCity: '', billingProvince: 'QC', billingPostalCode: '',
   });
   const [isExistingClient, setIsExistingClient] = useState(false);
-  const [portalCode, setPortalCode] = useState('');
+  const [lookupPhone, setLookupPhone] = useState('');
   const [lookingUpClient, setLookingUpClient] = useState(false);
   const [clientVerified, setClientVerified] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
@@ -120,19 +120,19 @@ export default function PublicBookingPage() {
   };
 
   const handleLookupClient = async () => {
-    if (!portalCode.trim()) return;
+    if (!lookupPhone.trim()) return;
     setLookingUpClient(true); setError('');
     try {
       const response = await fetch(`${SUPABASE_URL}/portal-lookup-client`, {
         method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ portal_code: portalCode.trim() }),
+        body: JSON.stringify({ phone: lookupPhone.trim(), team_id: teamId }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Client not found'); }
       const data = await response.json();
       setClientInfo({
         fullName: data.client.name || '', email: data.client.email || '', phone: data.client.phone || '',
-        billingAddress: data.client.billing_address || '', billingCity: data.client.billing_city || '',
-        billingProvince: data.client.billing_province || 'QC', billingPostalCode: data.client.billing_postal_code || '',
+        billingAddress: data.client.address || '', billingCity: data.client.city || '',
+        billingProvince: data.client.province || 'QC', billingPostalCode: data.client.postal_code || '',
       });
       setClientId(data.client.id); setClientVerified(true);
     } catch (err: any) { setError(err.message); } finally { setLookingUpClient(false); }
@@ -270,10 +270,10 @@ export default function PublicBookingPage() {
               </div>
               {isExistingClient && (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-400">{t('enterPortalCode')}</p>
+                  <p className="text-sm text-gray-400">{lang === 'fr' ? 'Entrez votre numéro de téléphone pour récupérer vos informations' : 'Enter your phone number to retrieve your information'}</p>
                   <div className="flex gap-2">
-                    <input type="text" value={portalCode} onChange={(e) => setPortalCode(e.target.value.toUpperCase())} placeholder={t('portalCode')} className="flex-1 p-3 bg-[#0d0d10] border border-[#2a2a32] rounded-lg text-white placeholder-gray-500 uppercase focus:ring-2 focus:ring-[#9B7EBF] focus:border-transparent" maxLength={8} />
-                    <button onClick={handleLookupClient} disabled={lookingUpClient || !portalCode.trim()} className="px-6 py-3 bg-[#9B7EBF] text-white rounded-lg hover:bg-[#8a6dae] disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors">{lookingUpClient ? '...' : t('lookupClient')}</button>
+                    <input type="tel" value={lookupPhone} onChange={(e) => setLookupPhone(e.target.value)} placeholder={lang === 'fr' ? 'Numéro de téléphone' : 'Phone number'} className="flex-1 p-3 bg-[#0d0d10] border border-[#2a2a32] rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-[#9B7EBF] focus:border-transparent" />
+                    <button onClick={handleLookupClient} disabled={lookingUpClient || !lookupPhone.trim()} className="px-6 py-3 bg-[#9B7EBF] text-white rounded-lg hover:bg-[#8a6dae] disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors">{lookingUpClient ? '...' : t('lookupClient')}</button>
                   </div>
                   {clientVerified && (<div className="flex items-center text-green-400"><svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-sm font-medium">{lang === 'fr' ? 'Client vérifié!' : 'Client verified!'}</span></div>)}
                 </div>

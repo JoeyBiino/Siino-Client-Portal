@@ -90,10 +90,10 @@ serve(async (req) => {
             name: client_info.name,
             email: client_info.email,
             phone: client_info.phone,
-            billing_address: client_info.billing_address || null,
-            billing_city: client_info.billing_city || null,
-            billing_province: client_info.billing_province || 'QC',
-            billing_postal_code: client_info.billing_postal_code || null,
+            address: client_info.billing_address || '',
+            city: client_info.billing_city || '',
+            province: client_info.billing_province || 'QC',
+            postal_code: client_info.billing_postal_code || '',
             portal_code: portalCode,
             portal_enabled: true,
           })
@@ -134,6 +134,15 @@ serve(async (req) => {
     }
 
     // Create the booking
+    // Include location info in notes since bookings table doesn't have location columns
+    let fullNotes = notes || '';
+    if (location_address) {
+      fullNotes += `\nLocation: ${location_address}`;
+    }
+    if (location_contact_name || location_contact_phone) {
+      fullNotes += `\nOn-site Contact: ${location_contact_name || ''} ${location_contact_phone || ''}`.trim();
+    }
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -144,10 +153,7 @@ serve(async (req) => {
         start_time: start_time,
         end_time: end_time,
         status: 'pending',
-        notes: notes || null,
-        location_address: location_address || null,
-        location_contact_name: location_contact_name || null,
-        location_contact_phone: location_contact_phone || null,
+        notes: fullNotes.trim() || null,
       })
       .select('id')
       .single()
