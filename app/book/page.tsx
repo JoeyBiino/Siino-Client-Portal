@@ -218,7 +218,7 @@ export default function PublicBookingPage() {
   const isClientInfoValid = () => clientInfo.fullName.trim() && clientInfo.email.trim() && clientInfo.phone.trim() && clientInfo.billingAddress.trim() && clientInfo.billingCity.trim() && clientInfo.billingPostalCode.trim();
   const resetForm = () => {
     setStep('client-info'); setClientInfo({ fullName: '', email: '', phone: '', billingAddress: '', billingCity: '', billingProvince: 'QC', billingPostalCode: '' });
-    setIsExistingClient(false); setPortalCode(''); setClientVerified(false); setClientId(null); setSelectedServices([]); setSelectedDate(''); setAvailableSlots([]); setSelectedSlot(null);
+    setIsExistingClient(false); setLookupPhone(''); setClientVerified(false); setClientId(null); setSelectedServices([]); setSelectedDate(''); setAvailableSlots([]); setSelectedSlot(null);
     setLocationInfo({ address: '', contactName: '', contactPhone: '', useClientInfo: true }); setNotes('');
   };
 
